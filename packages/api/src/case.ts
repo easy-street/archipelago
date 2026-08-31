@@ -57,6 +57,12 @@ export async function transformRequestKeys(request: Request, to: KeyCase): Promi
     method: request.method,
     headers,
     body: JSON.stringify(transformDataKeys(data, to)),
+    // Carry over the behavioral request properties a bare init would reset —
+    // dropping `signal` would break caller-side cancellation/timeouts.
+    signal: request.signal,
+    redirect: request.redirect,
+    credentials: request.credentials,
+    keepalive: request.keepalive,
   });
 }
 
@@ -76,10 +82,19 @@ export async function transformResponseKeys(response: Response, to: KeyCase): Pr
   });
 }
 
-function decamelizeProperties(properties: Record<string, unknown>, keep: ReadonlySet<string>) {
-  return Object.fromEntries(
-    Object.entries(properties).map(([key, value]) => {
-      return [
+// Recursively snake-case a JSON Schema node so the spec matches the deep
+// runtime transform: property keys and `required` entries at every level,
+// descending through `properties`, `items`, `additionalProperties`, and
+// combinators. Registered (`$id`) sub-schemas become component $refs instead
+// of being inlined.
+function decamelizeJsonSchema(node: unknown, keep: ReadonlySet<string>): unknown {
+  if (node === null || typeof node !== "object") return node;
+  if (Array.isArray(node)) return node.map((item) => decamelizeJsonSchema(item, keep));
+
+  const schema = { ...(node as Record<string, unknown>) };
+  if (schema.properties !== null && typeof schema.properties === "object") {
+    schema.properties = Object.fromEntries(
+      Object.entries(schema.properties as Record<string, unknown>).map(([key, value]) => [
         keep.has(key) ? key : toSnake(key),
         value !== null && typeof value === "object" && "$id" in value
           ? {
@@ -87,10 +102,21 @@ function decamelizeProperties(properties: Record<string, unknown>, keep: Readonl
                 schema: `#/components/schemas/${(value as unknown as { title: string }).title.replace("Schema", "")}`,
               },
             }
-          : value,
-      ];
-    }),
-  );
+          : decamelizeJsonSchema(value, keep),
+      ]),
+    );
+  }
+  if (Array.isArray(schema.required)) {
+    schema.required = (schema.required as string[]).map((key) =>
+      keep.has(key) ? key : toSnake(key),
+    );
+  }
+  for (const nested of ["items", "additionalProperties", "anyOf", "oneOf", "allOf"] as const) {
+    if (schema[nested] !== undefined && typeof schema[nested] === "object") {
+      schema[nested] = decamelizeJsonSchema(schema[nested], keep);
+    }
+  }
+  return schema;
 }
 
 // `pathParams` lists property names that must remain un-snake-cased — typically
@@ -107,16 +133,14 @@ export function transformSchema(
   },
 ) {
   const jsonSchema = z.toJSONSchema(schema);
-  const { properties, required } = jsonSchema;
   const keep = new Set<string>(options?.pathParams ?? []);
-  const rename = (key: string) => (keep.has(key) ? key : toSnake(key));
+  const { properties, required } = decamelizeJsonSchema(jsonSchema, keep) as {
+    properties?: Record<string, unknown>;
+    required?: string[];
+  };
   const decamelizedJsonSchema = {
-    ...(properties && {
-      properties: decamelizeProperties(properties, keep),
-    }),
-    ...(required && {
-      required: required.map(rename),
-    }),
+    ...(properties && { properties }),
+    ...(required && { required }),
     ...(options?.examples && { examples: options.examples }),
   };
 
