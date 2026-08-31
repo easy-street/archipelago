@@ -1,11 +1,16 @@
 import { oc } from "@orpc/contract";
 import * as z from "zod";
 
-export const HealthSchema = z.object({
-  status: z.literal("ok"),
-  timestamp: z.iso.datetime(),
-  runtime: z.string(),
-});
+import { registerSchema } from "./case";
+
+export const HealthSchema = registerSchema(
+  z.object({
+    status: z.literal("ok"),
+    timestamp: z.iso.datetime(),
+    runtime: z.string(),
+    uptimeSeconds: z.number().nonnegative(),
+  }),
+);
 
 export type Health = z.infer<typeof HealthSchema>;
 

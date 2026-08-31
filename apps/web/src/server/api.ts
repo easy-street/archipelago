@@ -14,6 +14,7 @@ export const router = os.router({
     status: "ok" as const,
     timestamp: new Date().toISOString(),
     runtime: typeof Bun !== "undefined" ? `bun/${Bun.version}` : `node/${process.version}`,
+    uptimeSeconds: Math.floor(process.uptime()),
   })),
 });
 
