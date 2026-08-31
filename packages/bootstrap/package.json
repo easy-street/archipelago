@@ -1,0 +1,24 @@
+{
+  "name": "@archipelago/bootstrap",
+  "private": true,
+  "description": "Human-in-the-loop runbook engine: automates the automatable provisioning steps, pauses with exact instructions (and verification) where a human is required. Profiles: app (new sibling app), project (full template bootstrap — ships with the archipelago template).",
+  "bin": {
+    "bootstrap": "./src/cli.ts"
+  },
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@archipelago/env-tools": "workspace:*"
+  },
+  "devDependencies": {
+    "@archipelago/typescript-config": "workspace:*",
+    "@types/bun": "^1.4.0",
+    "typescript": "^6.0.2"
+  }
+}

@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+.output/
+.nitro/
+.tanstack/
+
+# turbo
+.turbo/
+
+# env — never commit secrets. Checked-in exceptions: the per-env catalogs
+# (non-secret values + empty placeholders) and the Proton Pass reference
+# templates (.pass — contain no secret values). Rendered .secrets and .local
+# overrides stay ignored.
+.env
+.env.*
+!.env.development
+!.env.production
+!.env.staging
+!.env.*.pass
+
+# misc
+.DS_Store
+*.log
+
+# Turborepo
+.turbo
+
+# bootstrap runbook state (per-run, machine-local)
+.bootstrap/

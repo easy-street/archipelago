@@ -1,0 +1,7 @@
+{
+  "extends": "@archipelago/typescript-config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "types": ["bun"]
+  }
+}

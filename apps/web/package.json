@@ -1,0 +1,52 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "with-env development -- portless app.archipelago bun --bun vite dev",
+    "dev:staging": "with-env staging -- portless app.archipelago bun --bun vite dev",
+    "build": "bun --bun vite build",
+    "preview": "bun --bun vite preview",
+    "generate-routes": "bun --bun tsr generate",
+    "env:secrets:dev": "with-env development --secrets-only",
+    "env:secrets:staging": "with-env staging --secrets-only",
+    "env:secrets:prod": "with-env production --secrets-only",
+    "env:sync:dev": "env-sync development",
+    "env:sync:staging": "env-sync staging",
+    "env:sync:prod": "env-sync production",
+    "lint": "oxlint .",
+    "typecheck": "bun --bun tsr generate && tsc --noEmit"
+  },
+  "dependencies": {
+    "@archipelago/api": "workspace:*",
+    "@archipelago/env-tools": "workspace:*",
+    "@archipelago/ui": "workspace:*",
+    "@clerk/tanstack-react-start": "^1.5.9",
+    "@orpc/openapi": "^1.15.0",
+    "@orpc/server": "^1.15.0",
+    "@orpc/zod": "^1.15.0",
+    "@supabase/supabase-js": "^2.112.4",
+    "@tanstack/react-router": "^1.170.32",
+    "@tanstack/react-start": "^1.168.49",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@tanstack/router-cli": "^1.132.0",
+    "@types/bun": "^1.4.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "nitro": "^3.0.1-20260828-140537-5d83475c",
+    "portless": "^0.15.6",
+    "tailwindcss": "^4",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.0"
+  }
+}

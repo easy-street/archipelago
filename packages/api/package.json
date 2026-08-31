@@ -1,0 +1,24 @@
+{
+  "name": "@archipelago/api",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@orpc/client": "^1.15.0",
+    "@orpc/contract": "^1.15.0",
+    "@orpc/openapi": "^1.15.0",
+    "@orpc/openapi-client": "^1.15.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@archipelago/typescript-config": "workspace:*",
+    "typescript": "^6.0.2"
+  }
+}

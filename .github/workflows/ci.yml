@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+
+# Coalesce rapid pushes: cancel superseded runs per branch/PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Turborepo remote cache (Vercel). TURBO_TOKEN is a Vercel access token.
+  TURBO_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+# Deploys are handled by Vercel's git integration (project archipelago-web, root
+# directory apps/web): production on pushes to main, previews on PRs and the
+# staging branch. Promotion to main happens via the Promote workflow only.
+jobs:
+  enforce-pr-base:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: PRs must target staging
+        # Active only once staging is the default branch (allows bootstrap).
+        if: github.event.repository.default_branch == 'staging'
+        run: |
+          if [ "${{ github.base_ref }}" = "main" ]; then
+            echo "::error::PRs must target the staging branch, not main. Retarget this PR (gh pr edit ${{ github.event.number }} --base staging). main only moves via the Promote workflow."
+            exit 1
+          fi
+          echo "Base branch: ${{ github.base_ref }} — OK"
+
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Format check
+        run: bun run format:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        run: bun run test

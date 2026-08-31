@@ -1,0 +1,38 @@
+name: Migrate Staging DB
+
+# Apply Supabase migrations to the STAGING database (archipelago-staging) whenever
+# migration files land on the staging branch — the rehearsal for the same step
+# the Promote workflow later runs against production.
+#
+# Requires (once migrations exist, from M1): the SUPABASE_DB_URL_STAGING repo
+# secret — the staging project's pooler connection string. Until it is set,
+# runs skip with a warning.
+on:
+  push:
+    branches: [staging]
+    paths:
+      - "supabase/migrations/**"
+
+concurrency:
+  group: migrate-staging
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Apply migrations to the staging database
+        env:
+          SUPABASE_DB_URL_STAGING: ${{ secrets.SUPABASE_DB_URL_STAGING }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL_STAGING" ]; then
+            echo "::warning::SUPABASE_DB_URL_STAGING is not set — skipping. Set the secret to enable staging migrations."
+            exit 0
+          fi
+          supabase db push --db-url "$SUPABASE_DB_URL_STAGING" --include-all --yes

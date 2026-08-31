@@ -1,0 +1,5 @@
+{
+  "name": "archipelago-dev-clerk",
+  "private": true,
+  "description": "Holds the keyless Clerk application claim state for the dev environment (created by bootstrap; claim with: CLERK_MODE=agent bunx clerk open)"
+}

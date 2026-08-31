@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* Tailwind can't see through the workspace symlink — scan the UI package source explicitly */
+@source '../../../packages/ui/src';
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  /* Mobile-first touch defaults: no double-tap zoom delay, no gray tap flash */
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea,
+  label {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}

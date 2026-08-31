@@ -1,0 +1,57 @@
+name: Env Sync
+
+# Sync archipelago-web env vars to Vercel when a catalog or its secret references
+# change: production on main, staging (-> Vercel Preview) on staging. The sync
+# script is diff-based (only added/changed non-secrets are written; secrets are
+# always upserted as sensitive).
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - "apps/web/.env.production"
+      - "apps/web/.env.production.pass"
+      - "apps/web/.env.staging"
+      - "apps/web/.env.staging.pass"
+      - "packages/env-tools/src/**"
+
+# Coalesce rapid pushes per branch; syncs are idempotent, latest wins.
+concurrency:
+  group: env-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      SYNC_ENV: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        working-directory: .
+
+      - name: Install Proton Pass CLI
+        run: |
+          curl -fsSL https://proton.me/download/pass-cli/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Authenticate to Proton Pass
+        run: pass-cli login --pat "${{ secrets.PROTON_PASS_TOKEN }}"
+
+      - name: Sync ${{ env.SYNC_ENV }} env to Vercel
+        run: bun run "env:sync:$([ "$SYNC_ENV" = production ] && echo prod || echo staging)"
+
+      - name: Log out of Proton Pass
+        if: always()
+        run: pass-cli logout || true

@@ -1,0 +1,7 @@
+{
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "ignorePatterns": ["**/routeTree.gen.ts", "**/dist/**", "**/.output/**", "**/node_modules/**"]
+}

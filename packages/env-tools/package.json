@@ -1,0 +1,26 @@
+{
+  "name": "@archipelago/env-tools",
+  "private": true,
+  "description": "Per-app env tooling: with-env runner, Vercel env-sync, Clerk org backfill. All bins operate on the invoking app's directory (cwd).",
+  "bin": {
+    "backfill-orgs": "./src/backfill-orgs.ts",
+    "env-sync": "./src/env-sync.ts",
+    "with-env": "./src/with-env.ts"
+  },
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "lint": "oxlint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4"
+  },
+  "devDependencies": {
+    "@archipelago/typescript-config": "workspace:*",
+    "@types/bun": "^1.4.0",
+    "typescript": "^6.0.2"
+  }
+}

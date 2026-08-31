@@ -1,0 +1,6 @@
+# Read by oxfmt (its default ignore file alongside .gitignore) — no Prettier here.
+# Vendored agent skills: formatting them drifts the skills-lock.json hashes.
+.agents/
+
+# Generated files (tsr owns this file's style; formatting it fights the generator)
+apps/web/src/routeTree.gen.ts

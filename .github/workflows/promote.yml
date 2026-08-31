@@ -1,0 +1,103 @@
+name: Promote to Production
+
+# Manually promote staging -> production. Order is guaranteed: pending
+# Supabase migrations apply to the production database FIRST, then main is
+# fast-forwarded to staging, which triggers Vercel's production deploy.
+#
+# Requires (once migrations exist, from M1): the SUPABASE_DB_URL_PRODUCTION
+# repo secret — the production project's pooler connection string. Until it is
+# set, the migration step is skipped with a warning.
+on:
+  workflow_dispatch:
+
+# Queue promotions; never cancel one mid-migration. A queued run coalesces
+# subsequent triggers (GitHub keeps at most one pending run per group).
+concurrency:
+  group: promote-production
+  cancel-in-progress: false
+
+# An explicit permissions block replaces ALL default grants — actions:read is
+# needed by the CI-green check (gh run list).
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: staging
+          fetch-depth: 0
+
+      - name: Verify staging is ahead of main (fast-forward possible)
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "::error::main has commits not on staging — cannot fast-forward. Reconcile first."
+            exit 1
+          fi
+          if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
+            echo "Nothing to promote — main is already at staging."
+            echo "NOOP=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Verify staging CI is green
+        if: env.NOOP != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          conclusion=$(gh run list --repo "$GITHUB_REPOSITORY" --branch staging --workflow ci.yml \
+            --limit 1 --json conclusion,headSha \
+            -q "[.[] | select(.headSha == \"$(git rev-parse HEAD)\")][0].conclusion")
+          if [ "$conclusion" != "success" ]; then
+            echo "::error::CI for the staging head commit is '$conclusion' (want success). Wait for green CI before promoting."
+            exit 1
+          fi
+
+      - uses: oven-sh/setup-bun@v2
+        if: env.NOOP != 'true'
+        with:
+          bun-version: latest
+
+      # The fast-forward push below uses GITHUB_TOKEN, and GitHub suppresses
+      # workflow triggers from such pushes — env-sync.yml will NOT fire on
+      # main. Sync production env here instead, before the code ships.
+      - name: Sync production env to Vercel
+        if: env.NOOP != 'true'
+        env:
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          curl -fsSL https://proton.me/download/pass-cli/install.sh | bash
+          export PATH="$HOME/.local/bin:$PATH"
+          pass-cli login --pat "${{ secrets.PROTON_PASS_TOKEN }}"
+          bun install --frozen-lockfile
+          cd apps/web && bun run env:sync:prod
+          pass-cli logout || true
+
+      - uses: supabase/setup-cli@v1
+        if: env.NOOP != 'true'
+        with:
+          version: latest
+
+      - name: Apply pending migrations to the production database
+        if: env.NOOP != 'true'
+        env:
+          SUPABASE_DB_URL_PRODUCTION: ${{ secrets.SUPABASE_DB_URL_PRODUCTION }}
+        run: |
+          if ! ls supabase/migrations/*.sql >/dev/null 2>&1; then
+            echo "No migrations exist yet — skipping."
+            exit 0
+          fi
+          if [ -z "$SUPABASE_DB_URL_PRODUCTION" ]; then
+            echo "::warning::Migrations exist but SUPABASE_DB_URL_PRODUCTION is not set — skipping DB step. Set the secret before promoting schema changes."
+            exit 0
+          fi
+          supabase db push --db-url "$SUPABASE_DB_URL_PRODUCTION" --include-all --yes
+
+      - name: Fast-forward main to staging
+        if: env.NOOP != 'true'
+        run: git push origin HEAD:main

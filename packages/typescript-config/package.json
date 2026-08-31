@@ -1,0 +1,8 @@
+{
+  "name": "@archipelago/typescript-config",
+  "private": true,
+  "exports": {
+    "./base.json": "./base.json",
+    "./react-library.json": "./react-library.json"
+  }
+}

@@ -1,0 +1,4 @@
+.clerk/
+.env.local
+node_modules/
+bun.lock

@@ -1,0 +1,22 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+.clerk/
+.vercel
+# env: catalogs and Proton Pass reference templates are checked in;
+# rendered .secrets and .local overrides never are (see root .gitignore)
+.env*
+!.env.development
+!.env.production
+!.env.staging
+!.env.*.pass

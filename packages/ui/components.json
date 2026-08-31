@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "../../apps/web/src/styles.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@archipelago/ui/components",
+    "ui": "@archipelago/ui/components",
+    "utils": "@archipelago/ui/lib/cn",
+    "lib": "@archipelago/ui/lib",
+    "hooks": "@archipelago/ui/hooks"
+  }
+}
